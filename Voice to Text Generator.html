@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="description" content="Voice to Text Generator"/>
+    <meta name="keywords" content="Voice to Text Generator"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Voice to Text Generator</title>
+    <style>
+       /* General styles */
+       .calculator-box__main {
+        background: #fff;
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+        width: 100%;
+        border-radius: 0.6em;
+        padding: 2em;
+        box-sizing: border-box;
+        color: #000;
+      }
+
+      .calculator-box {
+        width: 100%;
+        margin-bottom: 30px;
+      }
+
+      .input-words {
+        width: 42em;
+        border: solid 0.1px;
+        border-radius: 10px;
+        border-color: #c1c1c1;
+      }
+
+      .calculator-operation__right {
+        text-align: end;
+      }
+
+      .calculator-operation {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .calculator-operation__left,
+      .calculator-operation__right {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      .app-font.calculator-text.calculator-text--large {
+        font-size: 1.3em;
+        padding: 0 0.3em;
+        margin: 0;
+      }
+
+      .calculator-operation__right {
+        text-align: end;
+      }
+
+      .calculator-input {
+        display: flex;
+        align-items: center;
+        flex: 0 0 calc(33.33% - 10px); /* 33.33% width for each input field on larger screens */
+      }
+
+      .calculator-box__main input {
+        text-align: right;
+        background: #efeff5;
+        border: 0;
+        outline: 0;
+        border-radius: 0.4em;
+        font-size: 1.4em;
+        font-weight: 300;
+        padding: 0.6em;
+        width: 7em;
+        height: 2em;
+        -moz-appearance: textfield;
+      }
+
+      .calculator-button {
+        margin-right: 4em;
+        padding: 15px 10px;
+        background-color: #000;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        margin-bottom: 2em;
+      }
+
+      .calculator-button:hover {
+        background-color: #efeff5;
+        color: #000000;
+      }
+
+      .calculator-button:focus {
+        outline: none;
+        background-color: #000000;
+        color: #ffffff;
+      }
+
+      /* Added styles for new features and responsiveness */
+      .calculator-text--small {
+        font-size: 0.8em;
+      }
+
+      .calculator-text--extra-large {
+        font-size: 1.6em;
+      }
+
+      .calculator-input--checkbox {
+        margin-top: 5px;
+        margin-right: 10px;
+        width: 4.3em;
+      }
+
+      #auto {
+        width: 6em;
+        height: 0.7em;
+      }
+
+      #comma {
+        width: 6em;
+        height: 0.7em;
+      }
+
+      .calculator-textarea {
+        width: 100%;
+        height: 100px;
+        margin-top: 10px;
+        padding: 5px;
+        resize: none;
+      }
+
+      /* Additional styles for Voice to Text */
+      .voice-to-text {
+        margin: 30px 0;
+        text-align: center;
+      }
+
+      #language{
+        width: 15em;
+      }
+
+      .language-select {
+        margin: 20px 0;
+        color: #000;
+      }
+
+      .language-select label,
+      .voice-to-text h2 {
+        margin-right: 0px;
+      }
+      
+      /* New button styles */
+      .transcript-controls {
+        text-align: center;
+        margin-top: 15px;
+      }
+      
+      .transcript-button {
+        padding: 10px;
+        margin: 0 5px; /* Spacing between buttons */
+        font-size: 16px;
+        cursor: pointer;
+      }
+    </style>
+</head>
+<body>
+    <!-- Voice to Text Section -->
+    <div class="voice-to-text">
+        <button id="start-btn" class="calculator-button">Start Listening</button>
+        <p id="instructions">Press the "Start Listening" button and allow access to your microphone.</p>
+        <div class="language-select">
+            <label for="language">Choose Language:</label>
+            <select id="language" name="language">
+                <!-- Options will be populated by JavaScript -->
+            </select>
+        </div>
+        <textarea id="transcript" class="input-words" placeholder="Transcription will appear here" readonly></textarea>
+        
+        <!-- Transcript Control Buttons -->
+        <div class="transcript-controls">
+            <button id="copy-btn" class="calculator-button transcript-button" title="copy">Copy</button>
+            <button id="download-btn" class="calculator-button transcript-button" title="download">Download</button>
+            <button id="clear-btn" class="calculator-button transcript-button" title="clear">Clear</button>
+        </div>
+    </div>
+    
+    <!-- Voice to Text Script -->
+    <script>
+     window.SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+
+      const recognition = new SpeechRecognition();
+      recognition.interimResults = true;
+      recognition.lang = "en-US"; // Default language
+      recognition.continuous = true;
+
+      const transcriptArea = document.getElementById("transcript");
+      const startBtn = document.getElementById("start-btn");
+      const instructionsText = document.getElementById("instructions");
+
+      let listening = false;
+
+      startBtn.addEventListener("click", () => {
+        if (listening) {
+          recognition.stop();
+          startBtn.textContent = "Start Listening";
+          instructionsText.textContent =
+            'Press the "Start Listening" button and allow access to your microphone.';
+        } else {
+          recognition.start();
+          startBtn.textContent = "Stop Listening";
+          instructionsText.textContent =
+            'Say something! Press "Stop Listening" to finish.';
+        }
+        listening = !listening;
+      });
+
+      recognition.addEventListener("result", (e) => {
+        const transcript = Array.from(e.results)
+          .map((result) => result[0])
+          .map((result) => result.transcript)
+          .join("");
+        transcriptArea.value = transcript;
+      });
+
+      recognition.addEventListener("end", () => {
+        if (listening) recognition.start();
+      });
+
+      const languageSelector = document.getElementById("language");
+      const languages = {
+        "en-US": "English (United States)",
+        "en-GB": "English (United Kingdom)",
+        "en-AU": "English (Australia)",
+        "en-CA": "English (Canada)",
+        "en-IN": "English (India)",
+        "en-NZ": "English (New Zealand)",
+        "ar-SA": "Arabic (Saudi Arabia)",
+        "zh-CN": "Chinese (Mandarin, China)",
+        "zh-HK": "Chinese (Cantonese, Hong Kong)",
+        "zh-TW": "Chinese (Mandarin, Taiwan)",
+        "da-DK": "Danish (Denmark)",
+        "nl-NL": "Dutch (Netherlands)",
+        "fr-FR": "French (France)",
+        "fr-CA": "French (Canada)",
+        "fi-FI": "Finnish (Finland)",
+        "de-DE": "German (Germany)",
+        "el-GR": "Greek (Greece)",
+        "he-IL": "Hebrew (Israel)",
+        "hi-IN": "Hindi (India)",
+        "hu-HU": "Hungarian (Hungary)",
+        "id-ID": "Indonesian (Indonesia)",
+        "it-IT": "Italian (Italy)",
+        "ja-JP": "Japanese (Japan)",
+        "ko-KR": "Korean (South Korea)",
+        "ms-MY": "Malay (Malaysia)",
+        "no-NO": "Norwegian (Norway)",
+        "pl-PL": "Polish (Poland)",
+        "pt-BR": "Portuguese (Brazil)",
+        "pt-PT": "Portuguese (Portugal)",
+        "ru-RU": "Russian (Russia)",
+        "es-MX": "Spanish (Mexico)",
+        "es-ES": "Spanish (Spain)",
+        "sv-SE": "Swedish (Sweden)",
+        "th-TH": "Thai (Thailand)",
+        "tr-TR": "Turkish (Turkey)",
+        "bg-BG": "Bulgarian (Bulgaria)",
+        "cs-CZ": "Czech (Czech Republic)",
+        "sr-RS": "Serbian (Serbia)",
+        "sk-SK": "Slovak (Slovakia)",
+        "uk-UA": "Ukrainian (Ukraine)",
+        "vi-VN": "Vietnamese (Vietnam)",
+        "ro-RO": "Romanian (Romania)",
+        "nl-BE": "Dutch (Belgium)",
+        "fr-BE": "French (Belgium)",
+        "is-IS": "Icelandic (Iceland)",
+        "mt-MT": "Maltese (Malta)",
+        "hr-HR": "Croatian (Croatia)",
+        "fi-FI": "Finnish (Finland)",
+        "da-GL": "Danish (Greenland)",
+        "rm-SG": "Romansh (Switzerland)",
+      };
+
+      Object.keys(languages).forEach((language) => {
+        const option = document.createElement("option");
+        option.value = language;
+        option.textContent = languages[language];
+        languageSelector.appendChild(option);
+      });
+
+      languageSelector.addEventListener("change", () => {
+        recognition.lang = languageSelector.value;
+      });
+
+      if (typeof recognition === "undefined") {
+        alert(
+          "Speech recognition is not supported in your browser. Use Google Chrome for the best experience."
+        );
+      }
+      
+      // Now add the event listeners for the new buttons
+      
+      document.getElementById('copy-btn').addEventListener('click', function() {
+          const transcript = document.getElementById('transcript');
+          transcript.select();
+          document.execCommand('copy');
+      });
+
+      document.getElementById('download-btn').addEventListener('click', function() {
+          const transcript = document.getElementById('transcript').value;
+          const blob = new Blob([transcript], { type: 'text/plain' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'transcript.txt';
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          a.remove();
+      });
+
+      document.getElementById('clear-btn').addEventListener('click', function() {
+          document.getElementById('transcript').value = '';
+      });
+    </script>
+</body>
+</html>
